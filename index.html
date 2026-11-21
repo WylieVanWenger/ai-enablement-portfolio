@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Fluency Rubric &amp; Anti-Slop Scorer | Wylie Amanda Van Wenger</title>
+  <style>
+    :root {
+      --bg: #f4f6f5;
+      --surface: #ffffff;
+      --ink: #13211c;
+      --muted: #52635c;
+      --border: #d7e0dc;
+      --brand: #0f5132;
+      --brand-dark: #0a3622;
+      --brand-soft: #e6f3ec;
+      --accent: #198754;
+      --warn-bg: #fff8e1;
+      --warn-border: #f0c36d;
+      --warn-ink: #7a4f01;
+      --risk-bg: #fdecec;
+      --risk-border: #e58b8b;
+      --risk-ink: #842029;
+      --ok-bg: #e8f5ee;
+      --ok-border: #8bc4a4;
+      --ok-ink: #0f5132;
+      --radius: 10px;
+      --shadow: 0 2px 10px rgba(19, 33, 28, 0.06);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    button:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0b291d 0%, #134631 100%);
+      color: #ffffff;
+      padding: 28px 20px 24px;
+      border-bottom: 3px solid #28a768;
+    }
+
+    .header-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .brand-eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9de0bd;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #d6e8df;
+      font-size: 14.5px;
+      max-width: 720px;
+    }
+
+    .privacy-badge {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #e9f7f0;
+      white-space: nowrap;
+    }
+
+    main {
+      max-width: 1140px;
+      margin: 22px auto 48px;
+      padding: 0 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: #e3eae7;
+      padding: 4px;
+      border-radius: var(--radius);
+      gap: 4px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--brand-dark);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .demo-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .demo-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .demo-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .demo-btn:hover {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .card-hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 290px;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 14.5px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: #fbfcfb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      resize: vertical;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    textarea:focus {
+      border-color: var(--brand);
+      background: #ffffff;
+    }
+
+    .input-footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .stats-line {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .action-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--brand);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 9px 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: #eef3f1;
+    }
+
+    .score-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f8faf9;
+      margin-bottom: 16px;
+    }
+
+    .score-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 24px;
+      flex-shrink: 0;
+      border: 3px solid var(--brand);
+      background: #ffffff;
+      color: var(--brand-dark);
+    }
+
+    .score-circle span {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: -2px;
+    }
+
+    .score-circle.tier-high {
+      border-color: var(--accent);
+      color: var(--ok-ink);
+    }
+
+    .score-circle.tier-mid {
+      border-color: #d99b1e;
+      color: var(--warn-ink);
+    }
+
+    .score-circle.tier-low {
+      border-color: #c93b47;
+      color: var(--risk-ink);
+    }
+
+    .tier-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      margin-bottom: 4px;
+    }
+
+    .badge-ok {
+      background: var(--ok-bg);
+      color: var(--ok-ink);
+      border: 1px solid var(--ok-border);
+    }
+
+    .badge-warn {
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+      border: 1px solid var(--warn-border);
+    }
+
+    .badge-risk {
+      background: var(--risk-bg);
+      color: var(--risk-ink);
+      border: 1px solid var(--risk-border);
+    }
+
+    .score-summary {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    .alert-box {
+      padding: 13px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13.5px;
+    }
+
+    .alert-risk {
+      background: var(--risk-bg);
+      border: 1px solid var(--risk-border);
+      color: var(--risk-ink);
+    }
+
+    .alert-ok {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-border);
+      color: var(--ok-ink);
+    }
+
+    .alert-zero-flags {
+      margin-top: 14px;
+    }
+
+    .alert-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .alert-list {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .alert-list li {
+      margin-bottom: 4px;
+    }
+
+    .pillar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 16px;
+    }
+
+    .pillar-row {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 13px;
+      background: #fcfdfd;
+    }
+
+    .pillar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .bar-track {
+      height: 7px;
+      background: #e4ebe8;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .bar-fill.mid {
+      background: #d99b1e;
+    }
+
+    .bar-fill.low {
+      background: #c93b47;
+    }
+
+    .pillar-note {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+
+    .flag-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .flag-item {
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+
+    .flag-item.compliance {
+      background: var(--risk-bg);
+      border-color: var(--risk-border);
+      color: var(--risk-ink);
+    }
+
+    .flag-item.slop {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+      color: var(--warn-ink);
+    }
+
+    .highlighted-preview {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      background: #ffffff;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .mark-slop {
+      background: #ffe8a1;
+      color: #664200;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border-bottom: 2px solid #d99b1e;
+      font-weight: 600;
+    }
+
+    .mark-compliance {
+      background: #f8c6cb;
+      color: #781720;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border-bottom: 2px solid #c93b47;
+      font-weight: 700;
+    }
+
+    .scaffold-box {
+      background: #13211c;
+      color: #e5f0eb;
+      border-radius: 8px;
+      padding: 13px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      margin-top: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .guidance-strip {
+      margin-top: 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--brand);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .guidance-strip h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      color: var(--brand-dark);
+    }
+
+    .guidance-strip p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    footer {
+      max-width: 1140px;
+      margin: 0 auto 36px;
+      padding: 0 20px;
+      font-size: 12.5px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="brand-eyebrow">AI Enablement Proof-of-Work Utility</div>
+        <h1>AI Fluency Rubric &amp; Anti-Slop Scorer</h1>
+        <p class="subtitle">
+          A practical internal harness for grading prompt quality, cutting AI slop, and flagging broker-dealer compliance risks before work reaches clients or colleagues.
+        </p>
+      </div>
+      <div class="privacy-badge">100% Local Browser Tool - Zero Data Sent Out</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="toolbar">
+      <div class="mode-tabs" role="group" aria-label="Audit Mode">
+        <button type="button" class="tab-btn active" id="tab-prompt" data-mode="prompt" aria-pressed="true">
+          1. Prompt Fluency Rubric
+        </button>
+        <button type="button" class="tab-btn" id="tab-draft" data-mode="draft" aria-pressed="false">
+          2. Draft Anti-Slop &amp; Compliance Check
+        </button>
+      </div>
+
+      <div class="demo-bar">
+        <span class="demo-label">Quick Demos:</span>
+        <button type="button" class="demo-btn" data-demo="weak">Weak Prompt</button>
+        <button type="button" class="demo-btn" data-demo="strong">Strong Prompt</button>
+        <button type="button" class="demo-btn" data-demo="sloppy">Sloppy Finance Memo</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="input-title">Paste a Prompt to Score</h2>
+        </div>
+        <p class="card-hint" id="input-hint">
+          Paste any team prompt below. The rubric grades five core dimensions - Role, Context, Constraints, Output Format, and Verification - and flags risky data inputs.
+        </p>
+        <textarea id="user-input" aria-labelledby="input-title" aria-describedby="input-hint" placeholder="Paste your prompt here, or click one of the Quick Demos above to test immediately..."></textarea>
+        <div class="input-footer">
+          <div class="stats-line" id="stats-line">0 words - 0 characters</div>
+          <div class="action-group">
+            <button type="button" class="btn-secondary" id="clear-btn">Clear</button>
+            <button type="button" class="btn-secondary" id="copy-report-btn">Copy Coaching Report</button>
+            <button type="button" class="btn-primary" id="run-audit-btn">Run Audit</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Coaching &amp; Risk Breakdown</h2>
+        </div>
+        <div id="results-body">
+          <div class="empty-state">
+            Paste a prompt or AI-assisted draft on the left and click <strong>Run Audit</strong>, or click a <strong>Quick Demo</strong> button above to see live scoring and compliance flags.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="guidance-strip">
+      <h2>Enablement Rule: Know When Not to Use AI</h2>
+      <p>
+        Good AI enablement includes knowing when to keep a task manual. Skip public AI tools when handling material non-public information (MNPI), client banking credentials, binding tax or legal opinions, or unverified financial projections. In a broker-dealer context this utility serves as a first-pass training aid, not a substitute for human compliance review.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div>Built by <strong>Wylie Amanda Van Wenger</strong> - AI Enablement &amp; Prompt Architecture Portfolio</div>
+    <div>Runs natively in HTML, CSS, and JavaScript - No API keys or third-party servers required</div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const els = {
+        input: document.getElementById("user-input"),
+        stats: document.getElementById("stats-line"),
+        tabPrompt: document.getElementById("tab-prompt"),
+        tabDraft: document.getElementById("tab-draft"),
+        inputTitle: document.getElementById("input-title"),
+        inputHint: document.getElementById("input-hint"),
+        resultsBody: document.getElementById("results-body"),
+        copyBtn: document.getElementById("copy-report-btn"),
+        clearBtn: document.getElementById("clear-btn"),
+        runBtn: document.getElementById("run-audit-btn"),
+        srStatus: document.getElementById("sr-status")
+      };
+
+      const EMPTY_RESULTS_HTML = els.resultsBody.innerHTML;
+
+      let currentMode = "prompt";
+      let lastPlainReport = "";
+      let copyResetTimer = null;
+      let srStatusTimer = null;
+      let copyRequestId = 0;
+
+      const DEMOS = {
+        weak: {
+          mode: "prompt",
+          text: "Write an email to a clean energy developer about tax credits and make it sound professional and compelling."
+        },
+        strong: {
+          mode: "prompt",
+          text: [
+            "Role: You are an Operations Analyst preparing a plain-language internal briefing for our clean energy project finance team.",
+            "",
+            "Communication Parameters: Write in crisp, plain language with zero corporate jargon and zero fluff. Never use em dashes or semicolons. Always use Oxford commas.",
+            "",
+            "Context & Objective: A solar project sponsor asked what documents they need to gather before a transferable tax credit diligence review. My objective is to give our relationship manager a short checklist they can review before sending.",
+            "",
+            "Output Format: Provide a 150-word email draft followed by a 5-item bulleted document checklist. Keep every bullet under 18 words.",
+            "",
+            "Verification & Guardrails: Rely strictly on standard diligence categories. Do not quote tax credit pricing, do not guarantee IRS qualification, and flag any item that requires human compliance or legal sign-off with [REVIEW REQUIRED]."
+          ].join("\n")
+        },
+        sloppy: {
+          mode: "draft",
+          text: [
+            "Subject: Unlocking Seamless Synergy in Today's Ever-Evolving Clean Energy Landscape",
+            "",
+            "Dear Partner,",
+            "",
+            "In today's fast-paced renewable energy landscape, it is important to note that transferable tax credits serve as a pivotal testament to our robust commitment to fostering innovation\u2014allowing your team to delve into unprecedented capital efficiency.",
+            "",
+            "By leveraging our best-in-class platform, we can seamlessly streamline your project financing and deliver a guaranteed 14% IRR with a risk-free tax credit transfer. Based on our review, IRS approval is certain for your upcoming battery storage asset.",
+            "",
+            "To move the needle quickly, please reply with your confidential deal terms and bank routing number so we can lock in this game-changer before quarter end.",
+            "",
+            "In conclusion, we look forward to embarking on this holistic journey together!"
+          ].join("\n")
+        }
+      };
+
+      const SLOP_RULES = [
+        { pattern: /\bdelv(?:e|es|ed|ing)\b/gi, label: "AI Cliché", tip: "Replace 'delve' with 'review,' 'check,' or 'examine.'" },
+        { pattern: /\btapestry\b/gi, label: "AI Cliché", tip: "Cut 'tapestry.' Describe the actual mix of items directly." },
+        { pattern: /\btestament\b/gi, label: "AI Cliché", tip: "Replace 'testament' with concrete proof or metrics." },
+        { pattern: /\bever[\s-]+evolving\b/gi, label: "AI Cliché", tip: "Cut 'ever-evolving.' Name the specific market change instead." },
+        { pattern: /\bin\s+today['\u2019]s\s+fast[\s-]+paced\b/gi, label: "AI Cliché", tip: "Delete this filler opening. Start directly with the point." },
+        { pattern: /\bit(?:\s+is|['\u2019]s)\s+important\s+to\s+note\b/gi, label: "AI Filler", tip: "Cut 'it is important to note' and state the fact directly." },
+        { pattern: /\bin\s+conclusion\b/gi, label: "AI Filler", tip: "Remove 'in conclusion.' End cleanly with the next step." },
+        { pattern: /\bpivotal\b/gi, label: "AI Cliché", tip: "Replace 'pivotal' with what actually changed or matters." },
+        { pattern: /\bfoster(?:s|ed|ing)?\b/gi, label: "AI Cliché", tip: "Use a plain verb like 'build,' 'support,' or 'grow.'" },
+        { pattern: /\bembark(?:s|ed|ing)?\b/gi, label: "AI Cliché", tip: "Replace 'embark' with 'start' or 'begin.'" },
+        { pattern: /\bunlock(?:s|ed|ing)?\b/gi, label: "AI Cliché", tip: "Replace 'unlock' with a concrete outcome like 'access' or 'save.'" },
+        { pattern: /\bgame[\s-]+chang(?:ers?|ing)\b/gi, label: "Hype Slop", tip: "Cut 'game-changer.' Quantify the actual impact instead." },
+        { pattern: /\blandscape\b/gi, label: "Vague Buzzword", tip: "Replace 'landscape' with 'market,' 'sector,' or 'industry.'" },
+        { pattern: /\bserv(?:e[sd]?|ing)\s+as\s+an?\b/gi, label: "Wordy AI Tell", tip: "Replace 'serves as a' with 'is a.'" },
+        { pattern: /\bunprecedented\b/gi, label: "Hype Slop", tip: "Cut 'unprecedented' unless backed by verified historical data." },
+        { pattern: /\bsynerg(?:y|ies|istic|iz(?:e[sd]?|ing))\b/gi, label: "Corporate Jargon", tip: "Cut 'synergy.' State the exact operational benefit." },
+        { pattern: /\bleverag(?:e|es|ed|ing)\b/gi, label: "Corporate Jargon", tip: "Replace 'leverage' with 'use' or 'apply.'" },
+        { pattern: /\bseamless(?:ly)?\b/gi, label: "Corporate Jargon", tip: "Cut 'seamless.' Show how the handoff actually works." },
+        { pattern: /\bstreamlin(?:e|es|ed|ing)\b/gi, label: "Corporate Jargon", tip: "Say what gets faster or which manual step disappears." },
+        { pattern: /\brobust\b/gi, label: "Corporate Jargon", tip: "Replace 'robust' with a concrete measure of reliability." },
+        { pattern: /\bholistic\b/gi, label: "Corporate Jargon", tip: "Replace 'holistic' with 'complete' or 'end-to-end.'" },
+        { pattern: /\bbest[\s-]+in[\s-]+class\b/gi, label: "Corporate Jargon", tip: "Remove unverified superlatives like 'best-in-class.'" },
+        { pattern: /\bmov(?:e[sd]?|ing)\s+the\s+needle\b/gi, label: "Corporate Jargon", tip: "Replace with the specific target metric you plan to move." },
+        { pattern: /\bcircl(?:e[sd]?|ing)\s+back\b/gi, label: "Corporate Jargon", tip: "Replace 'circle back' with 'follow up on [date].'" },
+        { pattern: /\butiliz(?:e|es|ed|ing)\b/gi, label: "Corporate Jargon", tip: "Use the plain word 'use' instead of 'utilize.'" },
+        { pattern: /\u2014/g, label: "AI Punctuation Tell", tip: "Em dash detected. Split into crisp sentences or use a spaced hyphen ( - )." },
+        { pattern: /;/g, label: "Dense Punctuation", tip: "Semicolon detected. Split into two shorter, plain-language sentences." },
+        { pattern: /!/g, label: "Over-Eager Tone", tip: "Check exclamation marks in financial communications. Plain periods read calmer and more credible." }
+      ];
+
+      const INPUT_RISK_RULES = [
+        { pattern: /\bconfidential\s+deal\s+terms\b|\bmaterial\s+non[\s-]?public\b|\bmnpi\b|\bunder\s+(?:an?\s+)?nda\b|\bnon[\s-]?disclosure\s+agreements?\b/gi, category: "Confidential / MNPI Risk", tip: "Stop and review policy. Never paste MNPI or NDA-bound terms into unapproved AI tools." },
+        { pattern: /\b(?:routing\s+numbers?|wire\s+instructions|bank\s+accounts?|account\s+numbers?|ssn|social\s+security)\b|(?<![\w-])\d{3}-\d{2}-\d{4}(?![\w-])/gi, category: "Sensitive Financial PII", tip: "Never handle banking credentials or PII inside AI drafts or email threads. Move to secure channels." }
+      ];
+
+      const DRAFT_COMPLIANCE_RULES = [
+        { pattern: /\bguarante(?:e|es|ed|eing)\b/gi, category: "Promissory Language", tip: "Remove 'guarantee.' Broker-dealer communications cannot promise returns or outcomes without compliance approval." },
+        { pattern: /\brisk[\s-]+free\b|\bno\s+risk\b|\bzero\s+risk\b/gi, category: "Misleading Risk Claim", tip: "Never describe an investment or credit transfer as risk-free. Flag for human compliance review." },
+        { pattern: /\b(?:\d+(?:\.\d+)?%\s*(?:(?:annual(?:ized)?|net|gross|target|projected)\s+)*(?:irr|returns?|yields?|roi)\b|(?:irr|returns?|yields?|roi)(?:\s+of\s+|\s*:\s*|\s+)\d+(?:\.\d+)?%)/gi, category: "Unverified Financial Projection", tip: "Specific return figures require verified sourcing, disclosures, and supervisory sign-off." },
+        { pattern: /\b(?:irs|sec|finra)\s+approval\s+is\s+(?:certain|guaranteed|assured)\b|\b(?:irs|sec|finra)[\s-]?(?:approved|endorsed)\b|\bwill\s+be\s+approved\s+by\s+(?:the\s+)?(?:irs|sec|finra)\b/gi, category: "Regulatory Claim", tip: "Do not imply regulator certainty or endorsement. Route to Legal and Compliance immediately." },
+        { pattern: /\btax\s+advice\b|\blegal\s+advice\b/gi, category: "Advisory Boundary", tip: "Clarify that the firm is providing factual market context rather than formal tax or legal advice." }
+      ].concat(INPUT_RISK_RULES);
+
+      const CONSTRAINT_CONCEPTS = [
+        /\b(?:do\s+not|don['\u2019]t|never|avoid|exclude|prohibit(?:ed)?)\b/i,
+        /\b(?:must|strictly|only|parameters?|constraints?|guardrails?|rules?)\b/i,
+        /\b(?:zero\s+fluff|no\s+fluff|plain[\s-]+language|no\s+jargon|zero\s+(?:corporate\s+)?jargon|tone|active\s+voice|concise)\b/i,
+        /\b(?:limit(?:ed)?|under\s+\d+|less\s+than\s+\d+|no\s+more\s+than\s+\d+|at\s+most\s+\d+|max(?:imum)?)\b/i,
+        /\b(?:oxford\s+commas?|em\s+dashes?|semicolons?|punctuation)\b/i
+      ];
+
+      const FORMAT_CONCEPTS = [
+        /\b(?:bullets?|bulleted|checklists?|numbered\s+lists?)\b/i,
+        /\b(?:drafts?|emails?|summaries|summary|briefs?|briefings?|outlines?|dossiers?|memos?|reports?)\b/i,
+        /\b(?:\d+[\s-]+words?|word\s+count|sentences?|paragraphs?)\b/i,
+        /\b(?:format|tables?|json|markdown|sections?|step[\s-]+by[\s-]+step|headlines?|subject\s+lines?)\b/i
+      ];
+
+      const VERIFY_CONCEPTS = [
+        /\b(?:sources?|cit(?:e|es|ed|ing|ations?)|strictly\s+on|provided\s+(?:data|facts?|text|sources?|context|documents?|materials?)|attached|verif(?:y|ies|ied|ying|ication)|grounded)\b/i,
+        /\b(?:(?:do\s+not|don['\u2019]t|never)\s+(?:invent|quote|guarantee|fabricate|guess|hallucinate)|unknowns?|assumptions?)\b/i,
+        /\b(?:flag(?:ged|ging)?|review\s+required|human(?:\s+review)?|sign[\s-]+off|compliance|legal)\b/i
+      ];
+
+      function announceStatus(message) {
+        window.clearTimeout(srStatusTimer);
+        els.srStatus.textContent = "";
+        srStatusTimer = window.setTimeout(function () {
+          els.srStatus.textContent = message;
+        }, 20);
+      }
+
+      function resetCopyButton() {
+        copyRequestId += 1;
+        window.clearTimeout(copyResetTimer);
+        copyResetTimer = null;
+        els.copyBtn.textContent = "Copy Coaching Report";
+      }
+
+      function updateStats() {
+        const text = els.input.value.trim();
+        const words = text ? text.split(/\s+/).length : 0;
+        const chars = els.input.value.length;
+        els.stats.textContent =
+          words + (words === 1 ? " word - " : " words - ") +
+          chars + (chars === 1 ? " character" : " characters");
+      }
+
+      function resetResults() {
+        lastPlainReport = "";
+        resetCopyButton();
+        els.resultsBody.innerHTML = EMPTY_RESULTS_HTML;
+      }
+
+      function clearAll() {
+        els.input.value = "";
+        updateStats();
+        resetResults();
+        announceStatus("Input and audit results cleared.");
+      }
+
+      function setMode(mode, force) {
+        if (mode === currentMode && !force) return;
+        currentMode = mode;
+        const isPrompt = mode === "prompt";
+        els.tabPrompt.classList.toggle("active", isPrompt);
+        els.tabDraft.classList.toggle("active", !isPrompt);
+        els.tabPrompt.setAttribute("aria-pressed", String(isPrompt));
+        els.tabDraft.setAttribute("aria-pressed", String(!isPrompt));
+
+        els.inputTitle.textContent = isPrompt
+          ? "Paste a Prompt to Score"
+          : "Paste an AI-Assisted Draft to Audit";
+
+        els.inputHint.textContent = isPrompt
+          ? "Paste any team prompt below. The rubric grades five core dimensions - Role, Context, Constraints, Output Format, and Verification - and flags risky data inputs."
+          : "Paste an email, memo, or client update below. The auditor highlights AI slop, strips corporate jargon, and flags broker-dealer compliance triggers for human review.";
+
+        els.input.placeholder = isPrompt
+          ? "Paste your prompt here, or click one of the Quick Demos above to test immediately..."
+          : "Paste your AI-assisted email or memo here, or click 'Sloppy Finance Memo' above...";
+
+        if (els.input.value.trim()) {
+          runAnalysis(false);
+        } else {
+          resetResults();
+        }
+      }
+
+      function loadDemo(key) {
+        const demo = DEMOS[key];
+        if (!demo) return;
+        els.input.value = demo.text;
+        updateStats();
+        setMode(demo.mode, true);
+      }
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function countConceptHits(text, patterns) {
+        let hits = 0;
+        for (const re of patterns) {
+          if (re.test(text)) hits += 1;
+        }
+        return hits;
+      }
+
+      function collectMatches(text, rules, type) {
+        const found = [];
+        for (const rule of rules) {
+          const re = rule.pattern.global
+            ? rule.pattern
+            : new RegExp(rule.pattern.source, rule.pattern.flags + "g");
+          re.lastIndex = 0;
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            if (m[0].length === 0) {
+              re.lastIndex += 1;
+              continue;
+            }
+            found.push({
+              start: m.index,
+              end: m.index + m[0].length,
+              match: m[0],
+              type: type,
+              label: rule.label || rule.category,
+              tip: rule.tip
+            });
+          }
+        }
+        return found;
+      }
+
+      function resolveNonOverlappingMatches(complianceFlags, slopFlags) {
+        const compareSpan = function (a, b) {
+          if (a.start !== b.start) return a.start - b.start;
+          return (b.end - b.start) - (a.end - a.start);
+        };
+
+        const sortedCompliance = complianceFlags.slice().sort(compareSpan);
+        const sortedSlop = slopFlags.slice().sort(compareSpan);
+
+        const acceptedCompliance = [];
+        let compCursor = 0;
+        sortedCompliance.forEach(function (item) {
+          if (item.start >= compCursor) {
+            acceptedCompliance.push(item);
+            compCursor = item.end;
+          }
+        });
+
+        const acceptedSlop = [];
+        let slopCursor = 0;
+        let ci = 0;
+        sortedSlop.forEach(function (item) {
+          if (item.start < slopCursor) return;
+          while (ci < acceptedCompliance.length && acceptedCompliance[ci].end <= item.start) {
+            ci += 1;
+          }
+          if (ci < acceptedCompliance.length && acceptedCompliance[ci].start < item.end) return;
+          acceptedSlop.push(item);
+          slopCursor = item.end;
+        });
+
+        const ordered = acceptedCompliance.concat(acceptedSlop).sort(function (a, b) {
+          return a.start - b.start;
+        });
+
+        return {
+          compliance: acceptedCompliance,
+          slop: acceptedSlop,
+          ordered: ordered
+        };
+      }
+
+      function groupFlags(flags) {
+        const grouped = [];
+        const seen = Object.create(null);
+        flags.forEach(function (f) {
+          const normalizedMatch = f.match.replace(/\s+/g, " ").trim();
+          const key = f.label + "::" + normalizedMatch.toLowerCase();
+          if (!seen[key]) {
+            seen[key] = { label: f.label, match: normalizedMatch, tip: f.tip, count: 0 };
+            grouped.push(seen[key]);
+          }
+          seen[key].count += 1;
+        });
+        return grouped;
+      }
+
+      function formatFlagHeading(baseTitle, totalCount, uniqueCount) {
+        if (totalCount === uniqueCount) {
+          return baseTitle + " (" + totalCount + ")";
+        }
+        return baseTitle + " (" + totalCount + " total, " + uniqueCount + " unique)";
+      }
+
+      function buildHighlightedHtml(text, orderedMatches) {
+        let html = "";
+        let pos = 0;
+        orderedMatches.forEach(function (item) {
+          html += escapeHtml(text.slice(pos, item.start));
+          const cls = item.type === "compliance" ? "mark-compliance" : "mark-slop";
+          const title = escapeHtml(item.label + ": " + item.tip);
+          html += '<mark class="' + cls + '" title="' + title + '">' + escapeHtml(item.match) + "</mark>";
+          pos = item.end;
+        });
+        html += escapeHtml(text.slice(pos));
+        return html;
+      }
+
+      function scorePrompt(text, silent) {
+        const trimmed = text.trim();
+        const words = trimmed ? trimmed.split(/\s+/).length : 0;
+
+        const hasExplicitRole = /(?:\b(?:role|persona):(?=\s|$)|\b(?:you\s+are|you['\u2019]re)\s+(?:an?|the|our|my)\b|\b(?:act(?:ing)?\s+as|assume\s+the\s+role\s+of)\b|\bas\s+an?\s+(?:(?!(?:of|for|to|with|from|by|in|on|at|the|and|or)\b)[\w-]+\s+){0,3}(?:analyst|architect|advisor|attorney|auditor|broker|coach|consultant|copywriter|developer|director|editor|engineer|executive|expert|founder|instructor|lawyer|lead|manager|officer|operator|partner|planner|researcher|specialist|strategist|trainer|underwriter|writer)\b)/i.test(text);
+        const hasAudience = /\b(?:(?:for|to|targeting|aimed\s+at|addressed\s+to)\s+(?:(?:a|an|our|the|my|internal|external)\s+)?(?:[\w-]+\s+){0,4}(?:teams?|clients?|executives?|board|partners?|sponsors?|investors?|managers?|readers?|audience|stakeholders?|colleagues?|leadership|developers?)|(?:audience|readers?))\b/i.test(text);
+        let roleScore = 0;
+        if (hasExplicitRole && hasAudience) roleScore = 20;
+        else if (hasExplicitRole) roleScore = 15;
+        else if (hasAudience) roleScore = 8;
+
+        const hasContextCue = /\b(?:context|objectives?|goals?|background|purpose|scenarios?|because|currently|preparing|evaluating|diligence|workflows?|projects?)\b/i.test(text);
+        let contextScore = 0;
+        if (hasContextCue && words >= 45) contextScore = 20;
+        else if (hasContextCue && words >= 22) contextScore = 15;
+        else if (words >= 25) contextScore = 10;
+        else if (words >= 12) contextScore = 6;
+
+        const constraintHits = countConceptHits(text, CONSTRAINT_CONCEPTS);
+        let constraintScore = 0;
+        if (constraintHits >= 3) constraintScore = 20;
+        else if (constraintHits === 2) constraintScore = 15;
+        else if (constraintHits === 1) constraintScore = 8;
+
+        const formatHits = countConceptHits(text, FORMAT_CONCEPTS);
+        let formatScore = 0;
+        if (formatHits >= 3) formatScore = 20;
+        else if (formatHits === 2) formatScore = 15;
+        else if (formatHits === 1) formatScore = 8;
+
+        const verifyHits = countConceptHits(text, VERIFY_CONCEPTS);
+        let verifyScore = 0;
+        if (verifyHits >= 3) verifyScore = 20;
+        else if (verifyHits === 2) verifyScore = 15;
+        else if (verifyHits === 1) verifyScore = 8;
+
+        const rawTotal = roleScore + contextScore + constraintScore + formatScore + verifyScore;
+
+        const pillars = [
+          {
+            name: "1. Role & Audience",
+            score: roleScore,
+            note: roleScore >= 15
+              ? "Clear role and target reader keep tone grounded."
+              : "Add who the AI should act as and who will read the output."
+          },
+          {
+            name: "2. Business Context & Objective",
+            score: contextScore,
+            note: contextScore >= 15
+              ? "Specific deal or workflow context anchors the response."
+              : "Explain the real business situation and what decision this output supports."
+          },
+          {
+            name: "3. Guardrails & Constraints",
+            score: constraintScore,
+            note: constraintScore >= 15
+              ? "Strong negative constraints actively prevent AI slop."
+              : "Tell the model what to avoid - such as jargon, fluff, or unverified claims."
+          },
+          {
+            name: "4. Output Format & Structure",
+            score: formatScore,
+            note: formatScore >= 15
+              ? "Defined structure makes the output immediately usable."
+              : "Specify length and layout - such as a 150-word email or a 5-item checklist."
+          },
+          {
+            name: "5. Verification & Compliance Grounding",
+            score: verifyScore,
+            note: verifyScore >= 15
+              ? "Built-in verification rules protect regulated workflows."
+              : "Require the model to rely only on supplied facts and flag claims needing human review."
+          }
+        ];
+
+        const rawInputRisks = collectMatches(text, INPUT_RISK_RULES, "compliance");
+        const resolvedRisks = resolveNonOverlappingMatches(rawInputRisks, []);
+        const inputRiskFlags = resolvedRisks.compliance;
+        const inputRiskGrouped = groupFlags(inputRiskFlags);
+
+        let total = rawTotal;
+        let tierLabel = "Level 1 - Needs Scaffolding";
+        let tierClass = "badge-risk";
+        let circleClass = "tier-low";
+        let summary = "High AI slop risk. Add role, constraints, and format rules before running this prompt.";
+
+        if (inputRiskFlags.length > 0) {
+          total = Math.min(rawTotal, 49);
+          tierLabel = "Hold - Sensitive Input Detected";
+          tierClass = "badge-risk";
+          circleClass = "tier-low";
+          summary = "Do not run in public AI tools or share as written. Remove MNPI, NDA terms, or financial PII before proceeding.";
+        } else if (total >= 85) {
+          tierLabel = "Level 4 - Production Harness";
+          tierClass = "badge-ok";
+          circleClass = "tier-high";
+          summary = "Strong, repeatable harness. Ready to share in a team prompt library.";
+        } else if (total >= 65) {
+          tierLabel = "Level 3 - Solid Operator";
+          tierClass = "badge-ok";
+          circleClass = "tier-high";
+          summary = "Useful working prompt. Tighten the lower-scoring pillar below for consistent results.";
+        } else if (total >= 40) {
+          tierLabel = "Level 2 - Basic Prompt";
+          tierClass = "badge-warn";
+          circleClass = "tier-mid";
+          summary = "Will produce generic first drafts that require heavy manual editing.";
+        }
+
+        const capNote = total < rawTotal
+          ? " Score capped from " + rawTotal + "/100 due to sensitive input."
+          : "";
+
+        const missingBlocks = [];
+        if (roleScore < 15) missingBlocks.push("Role: You are a [specific role] writing for [specific reader].");
+        if (contextScore < 15) missingBlocks.push("Context & Objective: [2 sentences describing the deal, workflow, or goal].");
+        if (constraintScore < 15) missingBlocks.push("Constraints: Use plain language. Zero corporate jargon. Do not invent numbers.");
+        if (formatScore < 15) missingBlocks.push("Output Format: Return a [word count] summary followed by [number] concise bullets.");
+        if (verifyScore < 15) missingBlocks.push("Verification: Flag any regulatory, tax, or financial claim with [REVIEW REQUIRED].");
+
+        let html = "";
+        html += '<div class="score-banner">';
+        html += '  <div class="score-circle ' + circleClass + '">' + total + '<span>/ 100</span></div>';
+        html += '  <div>';
+        html += '    <span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>';
+        html += '    <p class="score-summary">' + summary + capNote + '</p>';
+        html += '  </div>';
+        html += '</div>';
+
+        if (inputRiskFlags.length > 0) {
+          html += '<div class="alert-box alert-risk">';
+          html += '  <span class="alert-title">' + formatFlagHeading("Broker-Dealer Input Warning", inputRiskFlags.length, inputRiskGrouped.length) + '</span>';
+          html += '  Sensitive data references appeared inside your prompt. Confirm you are using an approved enterprise environment and remove confidential deal data or banking credentials:';
+          html += '  <ul class="alert-list">';
+          inputRiskGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " ×" + f.count : "";
+            html += '    <li><strong>' + escapeHtml(f.label) + ' ("' + escapeHtml(f.match) + '"' + countTag + '):</strong> ' + escapeHtml(f.tip) + '</li>';
+          });
+          html += '  </ul>';
+          html += '</div>';
+        }
+
+        html += '<div class="pillar-list">';
+        pillars.forEach(function (p) {
+          const pct = (p.score / 20) * 100;
+          const fillClass = p.score >= 15 ? "" : (p.score >= 8 ? "mid" : "low");
+          html += '<div class="pillar-row">';
+          html += '  <div class="pillar-top"><span>' + p.name + '</span><span>' + p.score + ' / 20</span></div>';
+          html += '  <div class="bar-track"><div class="bar-fill ' + fillClass + '" style="width:' + pct + '%"></div></div>';
+          html += '  <p class="pillar-note">' + p.note + '</p>';
+          html += '</div>';
+        });
+        html += '</div>';
+
+        if (missingBlocks.length > 0) {
+          html += '<div class="section-label">Drop-In Harness Upgrades</div>';
+          html += '<div class="scaffold-box">' + escapeHtml(missingBlocks.join("\n")) + '</div>';
+        } else if (inputRiskFlags.length === 0) {
+          html += '<div class="alert-box alert-ok"><span class="alert-title">All Five Pillars Covered</span>This prompt meets internal enablement standards for repeatable team use.</div>';
+        } else {
+          html += '<div class="alert-box alert-risk"><span class="alert-title">Structure Complete - Hold Until Scrubbed</span>All five prompt pillars are present, but this prompt cannot enter a shared library until sensitive data references are removed.</div>';
+        }
+
+        els.resultsBody.innerHTML = html;
+
+        const reportLines = [
+          "AI FLUENCY RUBRIC REPORT",
+          "Score: " + total + "/100 (" + tierLabel + ")" + (total < rawTotal ? " [Capped from " + rawTotal + "/100 due to sensitive input]" : ""),
+          "Summary: " + summary
+        ];
+
+        if (inputRiskGrouped.length > 0) {
+          reportLines.push("\n" + formatFlagHeading("Broker-Dealer Input Warnings", inputRiskFlags.length, inputRiskGrouped.length) + ":");
+          inputRiskGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " (x" + f.count + ")" : "";
+            reportLines.push('- [' + f.label + '] "' + f.match + '"' + countTag + " - " + f.tip);
+          });
+        }
+
+        reportLines.push("\nPillar Breakdown:");
+        pillars.forEach(function (p) {
+          reportLines.push("- " + p.name + ": " + p.score + "/20 - " + p.note);
+        });
+
+        if (missingBlocks.length > 0) {
+          reportLines.push("\nRecommended Additions:\n" + missingBlocks.join("\n"));
+        } else if (inputRiskFlags.length === 0) {
+          reportLines.push("\nStatus: Ready for team prompt library.");
+        } else {
+          reportLines.push("\nStatus: Hold - Remove sensitive data references before running or sharing.");
+        }
+
+        lastPlainReport = reportLines.join("\n");
+        const statusMsg = "Prompt audit complete. Score " + total + " out of 100. " + tierLabel + ".";
+        if (!silent) announceStatus(statusMsg);
+        return statusMsg;
+      }
+
+      function scoreDraft(text, silent) {
+        const rawSlopFlags = collectMatches(text, SLOP_RULES, "slop");
+        const rawComplianceFlags = collectMatches(text, DRAFT_COMPLIANCE_RULES, "compliance");
+        const resolved = resolveNonOverlappingMatches(rawComplianceFlags, rawSlopFlags);
+        const complianceFlags = resolved.compliance;
+        const slopFlags = resolved.slop;
+        const slopGrouped = groupFlags(slopFlags);
+        const complianceGrouped = groupFlags(complianceFlags);
+
+        let score = 100 - (slopFlags.length * 6) - (complianceFlags.length * 18);
+        if (complianceFlags.length > 0) score = Math.min(score, 49);
+        if (score < 0) score = 0;
+
+        let statusLabel = "Ready to Ship";
+        let badgeClass = "badge-ok";
+        let circleClass = "tier-high";
+        let summary = "Clean, plain-language draft with zero compliance triggers detected.";
+
+        if (complianceFlags.length > 0) {
+          statusLabel = "Hold - Compliance Review Required";
+          badgeClass = "badge-risk";
+          circleClass = "tier-low";
+          summary = "Do not send as written. High-risk broker-dealer language or sensitive data requires human compliance review.";
+        } else if (slopFlags.length >= 4) {
+          statusLabel = "Heavy AI Slop - Rewrite Recommended";
+          badgeClass = "badge-warn";
+          circleClass = "tier-low";
+          summary = "Reads like unedited AI output. Strip highlighted filler and jargon so the message sounds like a real expert.";
+        } else if (slopFlags.length > 0) {
+          statusLabel = "Minor Polish Needed";
+          badgeClass = "badge-warn";
+          circleClass = "tier-mid";
+          summary = "Mostly solid. Tighten the highlighted phrases below for sharper plain-language clarity.";
+        }
+
+        let html = "";
+        html += '<div class="score-banner">';
+        html += '  <div class="score-circle ' + circleClass + '">' + score + '<span>/ 100</span></div>';
+        html += '  <div>';
+        html += '    <span class="tier-badge ' + badgeClass + '">' + statusLabel + '</span>';
+        html += '    <p class="score-summary">' + summary + '</p>';
+        html += '  </div>';
+        html += '</div>';
+
+        if (complianceFlags.length > 0) {
+          html += '<div class="alert-box alert-risk">';
+          html += '  <span class="alert-title">Compliance Hold: ' + complianceFlags.length + ' Flag' + (complianceFlags.length > 1 ? 's' : '') + ' Detected</span>';
+          html += '  In a regulated broker-dealer context this draft must be reviewed by Compliance or Legal before external distribution.';
+          html += '</div>';
+        }
+
+        html += '<div class="section-label">Highlighted Audit Preview (Itemized Fixes Below)</div>';
+        html += '<div class="highlighted-preview">' + buildHighlightedHtml(text, resolved.ordered) + '</div>';
+
+        if (complianceGrouped.length > 0) {
+          html += '<div class="section-label">' + formatFlagHeading("Broker-Dealer Compliance Flags", complianceFlags.length, complianceGrouped.length) + '</div>';
+          html += '<ul class="flag-list">';
+          complianceGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " ×" + f.count : "";
+            html += '<li class="flag-item compliance"><strong>' + escapeHtml(f.label) + ' ("' + escapeHtml(f.match) + '"' + countTag + '):</strong> ' + escapeHtml(f.tip) + '</li>';
+          });
+          html += '</ul>';
+        }
+
+        if (slopGrouped.length > 0) {
+          html += '<div class="section-label">' + formatFlagHeading("AI Slop & Jargon Flags", slopFlags.length, slopGrouped.length) + '</div>';
+          html += '<ul class="flag-list">';
+          slopGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " ×" + f.count : "";
+            html += '<li class="flag-item slop"><strong>' + escapeHtml(f.label) + ' ("' + escapeHtml(f.match) + '"' + countTag + '):</strong> ' + escapeHtml(f.tip) + '</li>';
+          });
+          html += '</ul>';
+        }
+
+        if (resolved.ordered.length === 0) {
+          html += '<div class="alert-box alert-ok alert-zero-flags"><span class="alert-title">Zero Flags Found</span>No generic AI clichés, corporate buzzwords, or automated compliance triggers were detected. Always do a final factual read before sending.</div>';
+        }
+
+        els.resultsBody.innerHTML = html;
+
+        const reportLines = [
+          "ANTI-SLOP & COMPLIANCE AUDIT REPORT",
+          "Quality Score: " + score + "/100 (" + statusLabel + ")",
+          "Compliance Flags: " + complianceFlags.length + (complianceFlags.length !== complianceGrouped.length ? " total, " + complianceGrouped.length + " unique" : ""),
+          "AI Slop & Jargon Flags: " + slopFlags.length + (slopFlags.length !== slopGrouped.length ? " total, " + slopGrouped.length + " unique" : "")
+        ];
+        if (complianceGrouped.length > 0) {
+          reportLines.push("\nCompliance Issues:");
+          complianceGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " (x" + f.count + ")" : "";
+            reportLines.push('- [' + f.label + '] "' + f.match + '"' + countTag + " - " + f.tip);
+          });
+        }
+        if (slopGrouped.length > 0) {
+          reportLines.push("\nAI Slop & Jargon Fixes:");
+          slopGrouped.forEach(function (f) {
+            const countTag = f.count > 1 ? " (x" + f.count + ")" : "";
+            reportLines.push('- [' + f.label + '] "' + f.match + '"' + countTag + " - " + f.tip);
+          });
+        }
+        lastPlainReport = reportLines.join("\n");
+        const statusMsg = "Draft audit complete. Score " + score + " out of 100. " + statusLabel + ".";
+        if (!silent) announceStatus(statusMsg);
+        return statusMsg;
+      }
+
+      function runAnalysis(silent) {
+        const text = els.input.value.trim();
+        if (!text) {
+          resetResults();
+          return "";
+        }
+        if (!silent) resetCopyButton();
+        return currentMode === "prompt"
+          ? scorePrompt(text, Boolean(silent))
+          : scoreDraft(text, Boolean(silent));
+      }
+
+      function showCopyStatus(label, suffix) {
+        els.copyBtn.textContent = label;
+        announceStatus(label + "." + (suffix ? " " + suffix : ""));
+        window.clearTimeout(copyResetTimer);
+        copyResetTimer = window.setTimeout(function () {
+          copyResetTimer = null;
+          els.copyBtn.textContent = "Copy Coaching Report";
+        }, 1800);
+      }
+
+      function fallbackCopy(text, auditMsg) {
+        const prevFocus = document.activeElement;
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.setAttribute("readonly", "");
+        temp.style.position = "fixed";
+        temp.style.top = "0";
+        temp.style.left = "0";
+        temp.style.opacity = "0";
+        document.body.appendChild(temp);
+        temp.focus({ preventScroll: true });
+        temp.select();
+        temp.setSelectionRange(0, temp.value.length);
+        let ok = false;
+        try {
+          ok = document.execCommand("copy");
+        } catch (_err) {
+          ok = false;
+        } finally {
+          document.body.removeChild(temp);
+          if (prevFocus && typeof prevFocus.focus === "function") {
+            prevFocus.focus({ preventScroll: true });
+          }
+        }
+        showCopyStatus(ok ? "Copied Report" : "Copy Failed", auditMsg);
+      }
+
+      function copyReport() {
+        if (!els.input.value.trim()) {
+          resetResults();
+          showCopyStatus("Nothing to Copy", "");
+          return;
+        }
+        let auditMsg = "";
+        if (!lastPlainReport) {
+          auditMsg = runAnalysis(true);
+        }
+        const reportText = lastPlainReport;
+        if (!reportText) return;
+
+        const reqId = ++copyRequestId;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(reportText)
+            .then(function () {
+              if (reqId !== copyRequestId) return;
+              showCopyStatus("Copied Report", auditMsg);
+            })
+            .catch(function () {
+              if (reqId !== copyRequestId) return;
+              fallbackCopy(reportText, auditMsg);
+            });
+        } else {
+          fallbackCopy(reportText, auditMsg);
+        }
+      }
+
+      els.input.addEventListener("input", function () {
+        lastPlainReport = "";
+        resetCopyButton();
+        updateStats();
+      });
+
+      document.querySelectorAll("[data-mode]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          setMode(btn.getAttribute("data-mode"), false);
+        });
+      });
+
+      document.querySelectorAll("[data-demo]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          loadDemo(btn.getAttribute("data-demo"));
+        });
+      });
+
+      els.clearBtn.addEventListener("click", clearAll);
+      els.copyBtn.addEventListener("click", copyReport);
+      els.runBtn.addEventListener("click", function () { runAnalysis(false); });
+
+      updateStats();
+      window.addEventListener("pageshow", updateStats);
+    })();
+  </script>
+</body>
+</html>
