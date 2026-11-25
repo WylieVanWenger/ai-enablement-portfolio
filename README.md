@@ -8,10 +8,10 @@ Practical AI harnesses, no-code compliance workflows, and plain-language enablem
 
 - **[AI Fluency Rubric](./ai-fluency-rubric.md)** - A four-level skill framework (Beginner to Steward) for measuring how teams actually use AI day-to-day, paired with a 90-day rollout and coaching guide.
 - **[Plain-Language AI Policy (Broker-Dealer Edition)](./plain-language-ai-policy.md)** - A readable, enforceable usage policy covering approved tools, red/yellow/green data redaction tiers, FINRA Rule 2210 safeguards, output ownership, and incident reporting.
+- **[FINRA Rule 2210 Pre-Screener SOP & Prompt Harness](./finra-2210-prescreener-sop.md)** - A step-by-step operational playbook and copy-and-paste prompt harness for classifying communications, redacting sensitive data, pre-screening drafts for Rule 2210 red flags, and preserving recordkeeping artifacts.
+## Tools & Automations
 
 ---
-
-## Tools & Automations
 
 - **[Anti-Slop & Compliance Auditor (n8n + Gemini)](https://github.com/WylieVanWenger/anti-slop-compliance-auditor)** - An automated pre-screening workflow built in n8n and Google Gemini that checks broker-dealer drafts against FINRA Rule 2210, strips AI clichés, and routes outputs into `FLAGGED FOR COMPLIANCE REVIEW` or `CLEARED FOR USE` reports using strict Boolean gating and fence-safe JSON parsing.
 
